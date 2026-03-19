@@ -1,61 +1,68 @@
-import streamlit as st
 import pandas as pd
 import random
 import datetime
+import ipywidgets as widgets
+from IPython.display import clear_output, display, HTML
 
-# Configuración de la página web
-st.set_page_config(page_title="Asignación de Charlas", page_icon="👷‍♂️")
+def realizar_sorteo(b):
+    clear_output()
+    display(boton_sorteo) # Volver a mostrar el botón
 
-st.title("Generador Aleatorio de Charlas 🎯")
-st.write("Presiona el botón para elegir a una persona y un tema según el día de la semana.")
+    try:
+        # Cargar los archivos
+        # Specify 'latin1' encoding for files that might contain non-UTF-8 characters like 'ñ'
+        personal = pd.read_csv('Personal.csv', header=None, names=['Nombre'], encoding='latin1')
+        charlas = pd.read_csv('Charlas.csv', encoding='latin1')
 
-# Función para cargar los archivos CSV
-@st.cache_data
-def cargar_datos():
-    personal = pd.read_csv('Personal.csv', header=None, names=['Nombre'])
-    charlas = pd.read_csv('Charlas.csv')
-    return personal, charlas
+        # Determinar el día y la categoría
+        dia_actual = datetime.datetime.now().weekday()
+        dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+        nombre_dia = dias_semana[dia_actual]
 
-try:
-    personal, charlas = cargar_datos()
-    
-    # Saber qué día es hoy
-    dia_actual = datetime.datetime.now().weekday()
-    dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-    nombre_dia = dias_semana[dia_actual]
-
-    # Regla: Martes (1) y Jueves (3) son Ambiente, los demás Seguridad
-    if dia_actual == 1 or dia_actual == 3:
-        categoria_del_dia = 'Medio Ambiente'
-        color_texto = "#2e7d32" # Verde
-    else:
-        categoria_del_dia = 'Seguridad (SST)'
-        color_texto = "#1565c0" # Azul
-
-    st.markdown(f"### 📅 Hoy es **{nombre_dia}**")
-    st.markdown(f"#### Categoría correspondiente: <span style='color:{color_texto};'>{categoria_del_dia}</span>", unsafe_allow_html=True)
-    st.divider()
-
-    # Botón gigante para generar
-    if st.button("🎲 Seleccionar Persona y Tema Aleatorio", use_container_width=True):
-        temas_filtrados = charlas[charlas['Categoría'] == categoria_del_dia]
-        
-        if temas_filtrados.empty:
-            st.error(f"No hay temas disponibles para {categoria_del_dia}.")
+        if dia_actual == 1 or dia_actual == 3: # Martes y Jueves
+            categoria_del_dia = 'Medio Ambiente'
+            color = "#2e7d32" # Verde
         else:
-            persona_elegida = random.choice(personal['Nombre'].tolist())
-            tema_elegido = temas_filtrados.sample(n=1).iloc[0]
+            categoria_del_dia = 'Seguridad (SST)'
+            color = "#1565c0" # Azul
 
-            # Mostrar los resultados en cuadros bonitos
-            st.success("¡Sorteo realizado con éxito!")
-            st.info(f"👤 **Expositor asignado:** {persona_elegida.strip()}")
-            st.warning(f"📚 **Tema a exponer:** {tema_elegido['Tema de la Charla']}")
-            
-            # Si en tu archivo la columna se llama diferente (ej: Punto Clave), cámbialo aquí abajo:
-            try:
-                st.error(f"🎯 **Objetivo/Punto Clave:** {tema_elegido['Objetivo Principal']}")
-            except:
-                pass # Por si la columna de objetivo tiene otro nombre en tu archivo
+        temas_filtrados = charlas[charlas['Categoría'] == categoria_del_dia]
 
-except FileNotFoundError:
-    st.error("⚠️ Faltan los archivos. Asegúrate de que 'Personal.csv' y 'Charlas.csv' estén junto a este archivo.")
+        # Mostrar cabecera
+        display(HTML(f"<h2>📅 Hoy es {nombre_dia}</h2>"))
+        display(HTML(f"<h3>Categoría: <span style='color:{color};'>{categoria_del_dia}</span></h3><hr>"))
+
+        if temas_filtrados.empty:
+            display(HTML("<p style='color:red;'>No hay temas disponibles para esta categoría.</p>"))
+            return
+
+        # Sorteo
+        persona_elegida = random.choice(personal['Nombre'].tolist())
+        tema_elegido = temas_filtrados.sample(n=1).iloc[0]
+
+        # Resultados
+        display(HTML(f"<h4>👤 <b>Expositor asignado:</b> {persona_elegida.strip()}</h4>"))
+        display(HTML(f"<h4>📚 <b>Tema de la Charla:</b> {tema_elegido['Tema de la Charla']}</h4>"))
+
+        try:
+            display(HTML(f"<h4>🎯 <b>Objetivo Principal:</b> {tema_elegido['Objetivo Principal']}</h4>"))
+        except:
+            pass # Por si la columna se llama diferente
+
+    except FileNotFoundError:
+        display(HTML("<h4 style='color:red;'>⚠️ Error: No encuentro los archivos. Asegúrate de subir 'Personal.csv' y 'Charlas.csv' en la carpeta de la izquierda.</h4>"))
+
+# Crear el botón interactivo
+boton_sorteo = widgets.Button(
+    description='🎲 Sortear Charla',
+    disabled=False,
+    button_style='success',
+    tooltip='Haz clic para elegir persona y tema',
+    icon='check'
+)
+
+# Qué hacer cuando se hace clic
+boton_sorteo.on_click(realizar_sorteo)
+
+# Mostrar el botón por primera vez
+display(boton_sorteo)
