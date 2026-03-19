@@ -38,7 +38,7 @@ try:
 
     # Botón gigante para generar
     if st.button("🎲 Seleccionar Persona y Tema Aleatorio", use_container_width=True):
-        temas_filtrados = charlas[charlas['Categoría'] == categoria_del_dia]
+        temas_filtrados = charlas[charlas['Categoria'] == categoria_del_dia]
         
         if temas_filtrados.empty:
             st.error(f"No hay temas disponibles para {categoria_del_dia}.")
